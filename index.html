@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practice Exam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --navy: #0d1117;
+            --panel: #161b22;
+            --border: #30363d;
+            --muted: #8b949e;
+            --text: #e6edf3;
+            --amber: #f0a500;
+            --amber-dim: rgba(240, 165, 0, 0.12);
+            --green: #3fb950;
+            --green-dim: rgba(63, 185, 80, 0.10);
+            --red: #f85149;
+            --red-dim: rgba(248, 81, 73, 0.10);
+            --radius: 6px;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--navy);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 40px 20px 80px;
+            line-height: 1.6;
+        }
+
+        /* ── Header ── */
+        header {
+            max-width: 760px;
+            margin: 0 auto 36px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--amber);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        header h1 {
+            font-size: 26px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            margin-top: 6px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        /* ── Container ── */
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        /* ── Upload card ── */
+        .upload-card {
+            border: 1px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            text-align: center;
+            background: var(--panel);
+            margin-bottom: 32px;
+            transition: border-color 0.2s;
+        }
+
+        .upload-card:hover {
+            border-color: var(--amber);
+        }
+
+        .upload-card label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 14px;
+            cursor: pointer;
+        }
+
+        .upload-card label strong {
+            color: var(--text);
+        }
+
+        /* custom file button */
+        .file-btn-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        #file-input {
+            position: absolute;
+            opacity: 0;
+            inset: 0;
+            cursor: pointer;
+        }
+
+        .file-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--amber-dim);
+            border: 1px solid var(--amber);
+            color: var(--amber);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 9px 20px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            letter-spacing: 0.04em;
+            transition: background 0.15s;
+        }
+
+        .file-btn:hover {
+            background: rgba(240, 165, 0, 0.22);
+        }
+
+        .file-btn svg {
+            flex-shrink: 0;
+        }
+
+        /* ── Question blocks ── */
+        #quiz-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .question-block {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px 24px;
+            display: none;
+            transition: border-color 0.2s;
+        }
+
+        .question-block:hover {
+            border-color: #444c56;
+        }
+
+        .question-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .q-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--amber);
+            background: var(--amber-dim);
+            border: 1px solid rgba(240, 165, 0, 0.25);
+            padding: 3px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+
+        .question-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text);
+            line-height: 1.55;
+        }
+
+        /* ── Options ── */
+        .options {
+            display: flex;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .options label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 9px 18px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--muted);
+            transition: border-color 0.15s, color 0.15s, background 0.15s;
+            user-select: none;
+        }
+
+        .options label:hover {
+            border-color: var(--amber);
+            color: var(--amber);
+            background: var(--amber-dim);
+        }
+
+        .options input[type="radio"] {
+            display: none;
+        }
+
+        .options input[type="radio"]:checked+span {
+            /* handled via JS class toggle */
+        }
+
+        .options label.selected {
+            border-color: var(--amber);
+            color: var(--amber);
+            background: var(--amber-dim);
+        }
+
+        /* ── Feedback ── */
+        .feedback {
+            display: none;
+            margin-top: 14px;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            font-size: 13.5px;
+            line-height: 1.55;
+        }
+
+        .feedback.correct {
+            background: var(--green-dim);
+            border: 1px solid rgba(63, 185, 80, 0.3);
+            color: #7ee787;
+        }
+
+        .feedback.correct strong {
+            color: var(--green);
+        }
+
+        .feedback.incorrect {
+            background: var(--red-dim);
+            border: 1px solid rgba(248, 81, 73, 0.3);
+            color: #ffa198;
+        }
+
+        .feedback.incorrect strong {
+            color: var(--red);
+        }
+
+        /* ── Submit button ── */
+        #submit-btn {
+            display: none;
+            width: 100%;
+            margin-top: 28px;
+            padding: 14px;
+            background: var(--amber);
+            color: #0d1117;
+            border: none;
+            border-radius: var(--radius);
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.01em;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+
+        #submit-btn:hover {
+            opacity: 0.88;
+        }
+
+        #submit-btn:active {
+            transform: scale(0.99);
+        }
+
+        /* ── Results ── */
+        #results-container {
+            display: none;
+            margin-top: 32px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px 24px;
+            text-align: center;
+        }
+
+        #results-container h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .score-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 52px;
+            font-weight: 600;
+            color: var(--amber);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .score-label {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        .score-bar-bg {
+            width: 100%;
+            max-width: 320px;
+            height: 6px;
+            background: var(--border);
+            border-radius: 99px;
+            margin: 0 auto 20px;
+            overflow: hidden;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: var(--amber);
+            width: 0%;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .results-hint {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        /* ── Retry button ── */
+        #retry-btn {
+            display: none;
+            margin-top: 16px;
+            padding: 9px 24px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: var(--radius);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.15s, color 0.15s;
+        }
+
+        #retry-btn:hover {
+            border-color: var(--text);
+            color: var(--text);
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--navy);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        @media (max-width: 540px) {
+            header h1 {
+                font-size: 20px;
+            }
+
+            .score-display {
+                font-size: 40px;
+            }
+
+            .options {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <header>
+            <div class="header-eyebrow">UNSW &mdash; kk</div>
+            <h1>Practice Exam Environment</h1>
+            <p>True / False — load a question file to begin.</p>
+        </header>
+
+        <div class="upload-card">
+            <label for="file-input"><strong>No questions loaded.</strong> Select a JSON file to start a session.</label>
+            <div class="file-btn-wrapper">
+                <input type="file" id="file-input" accept=".json">
+                <div class="file-btn">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 1v9m0-9L5 4m3-3 3 3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Load question file
+                </div>
+            </div>
+        </div>
+
+        <div id="quiz-form"></div>
+
+        <button id="submit-btn" onclick="gradeTest()">Submit Exam</button>
+
+        <div id="results-container">
+            <h2>Session complete</h2>
+            <div class="score-display"><span id="score-display">0</span> / <span id="total-display">0</span></div>
+            <p class="score-label">questions answered correctly</p>
+            <div class="score-bar-bg">
+                <div class="score-bar-fill" id="score-bar"></div>
+            </div>
+            <p class="results-hint">Scroll up to review your feedback.</p>
+            <button id="retry-btn" onclick="retryQuiz()">Load new file</button>
+        </div>
+
+    </div>
+
+    <script>
+        let currentQuestions = [];
+        const quizContainer = document.getElementById('quiz-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const fileInput = document.getElementById('file-input');
+        const resultsContainer = document.getElementById('results-container');
+        const retryBtn = document.getElementById('retry-btn');
+
+        fileInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    currentQuestions = JSON.parse(e.target.result);
+                    renderQuiz();
+                    // Update upload card label
+                    document.querySelector('.upload-card label').innerHTML =
+                        `<strong>${file.name}</strong> &mdash; ${currentQuestions.length} questions loaded.`;
+                } catch (error) {
+                    alert("Error parsing JSON. Please ensure the file is correctly formatted.");
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        function renderQuiz() {
+            quizContainer.innerHTML = '';
+            resultsContainer.style.display = 'none';
+            retryBtn.style.display = 'none';
+
+            currentQuestions.forEach((q, index) => {
+                const hexNum = '0x' + String(index + 1).padStart(2, '0');
+                const block = document.createElement('div');
+                block.className = 'question-block';
+                block.style.display = 'block';
+                block.innerHTML = `
+                    <div class="question-header">
+                        <span class="q-num">${hexNum}</span>
+                        <div class="question-text">${q.text}</div>
+                    </div>
+                    <div class="options">
+                        <label id="label-T-${q.id}">
+                            <input type="radio" name="q${q.id}" value="T">
+                            <span>True</span>
+                        </label>
+                        <label id="label-F-${q.id}">
+                            <input type="radio" name="q${q.id}" value="F">
+                            <span>False</span>
+                        </label>
+                    </div>
+                    <div class="feedback" id="feedback-${q.id}"></div>
+                `;
+                quizContainer.appendChild(block);
+            });
+
+            // Add selection highlight behaviour
+            currentQuestions.forEach(q => {
+                ['T', 'F'].forEach(val => {
+                    const input = document.querySelector(`input[name="q${q.id}"][value="${val}"]`);
+                    input.addEventListener('change', () => {
+                        document.querySelectorAll(`input[name="q${q.id}"]`).forEach(r => {
+                            r.closest('label').classList.remove('selected');
+                        });
+                        input.closest('label').classList.add('selected');
+                    });
+                });
+            });
+
+            submitBtn.style.display = 'block';
+        }
+
+        function gradeTest() {
+            let score = 0;
+
+            currentQuestions.forEach(q => {
+                const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+                const feedbackDiv = document.getElementById(`feedback-${q.id}`);
+                feedbackDiv.style.display = 'block';
+
+                if (!selected) {
+                    feedbackDiv.className = 'feedback incorrect';
+                    feedbackDiv.innerHTML = `<strong>Unanswered.</strong> ${q.explanation}`;
+                } else if (selected.value === q.answer) {
+                    score++;
+                    feedbackDiv.className = 'feedback correct';
+                    feedbackDiv.innerHTML = `<strong>Correct.</strong> ${q.explanation}`;
+                } else {
+                    feedbackDiv.className = 'feedback incorrect';
+                    feedbackDiv.innerHTML = `<strong>Incorrect.</strong> ${q.explanation}`;
+                }
+            });
+
+            submitBtn.style.display = 'none';
+            resultsContainer.style.display = 'block';
+            retryBtn.style.display = 'inline-block';
+            document.getElementById('score-display').innerText = score;
+            document.getElementById('total-display').innerText = currentQuestions.length;
+
+            // Animate score bar
+            const pct = currentQuestions.length > 0 ? (score / currentQuestions.length) * 100 : 0;
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    document.getElementById('score-bar').style.width = pct + '%';
+                });
+            });
+
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function retryQuiz() {
+            fileInput.value = '';
+            document.querySelector('.upload-card label').innerHTML =
+                `<strong>No questions loaded.</strong> Select a JSON file to start a session.`;
+            quizContainer.innerHTML = '';
+            resultsContainer.style.display = 'none';
+            submitBtn.style.display = 'none';
+            retryBtn.style.display = 'none';
+            currentQuestions = [];
+        }
+    </script>
+
+</body>
+
+</html>
