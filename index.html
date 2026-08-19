@@ -106,7 +106,6 @@
             color: var(--text);
         }
 
-        /* custom file button */
         .file-btn-wrapper {
             position: relative;
             display: inline-block;
@@ -157,11 +156,17 @@
             border-radius: var(--radius);
             padding: 22px 24px;
             display: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .question-block:hover {
             border-color: #444c56;
+        }
+
+        /* highlight wrong questions when jumped to */
+        .question-block.jump-highlight {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(248, 81, 73, 0.12);
         }
 
         .question-header {
@@ -224,10 +229,6 @@
             display: none;
         }
 
-        .options input[type="radio"]:checked+span {
-            /* handled via JS class toggle */
-        }
-
         .options label.selected {
             border-color: var(--amber);
             color: var(--amber);
@@ -264,11 +265,61 @@
             color: var(--red);
         }
 
+        /* ── Unanswered warning ── */
+        #unanswered-warning {
+            display: none;
+            margin-top: 20px;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            background: rgba(248, 81, 73, 0.08);
+            border: 1px solid rgba(248, 81, 73, 0.25);
+            font-size: 13px;
+            color: #ffa198;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #unanswered-warning .warn-icon {
+            flex-shrink: 0;
+            color: var(--red);
+        }
+
+        #unanswered-warning .warn-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        #unanswered-warning .warn-text {
+            flex: 1;
+        }
+
+        .warn-q-link {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(248, 81, 73, 0.12);
+            border: 1px solid rgba(248, 81, 73, 0.3);
+            color: #ffa198;
+            padding: 2px 7px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .warn-q-link:hover {
+            background: rgba(248, 81, 73, 0.22);
+            color: var(--red);
+        }
+
         /* ── Submit button ── */
         #submit-btn {
             display: none;
             width: 100%;
-            margin-top: 28px;
+            margin-top: 16px;
             padding: 14px;
             background: var(--amber);
             color: #0d1117;
@@ -332,7 +383,7 @@
             height: 6px;
             background: var(--border);
             border-radius: 99px;
-            margin: 0 auto 20px;
+            margin: 0 auto 24px;
             overflow: hidden;
         }
 
@@ -342,6 +393,54 @@
             background: var(--amber);
             width: 0%;
             transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ── Jump to wrong section ── */
+        #wrong-nav {
+            display: none;
+            margin-top: 4px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(248, 81, 73, 0.06);
+            border: 1px solid rgba(248, 81, 73, 0.2);
+            border-radius: var(--radius);
+            text-align: left;
+        }
+
+        #wrong-nav .wrong-nav-header {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--red);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        #wrong-nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+
+        .wrong-q-link {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(248, 81, 73, 0.10);
+            border: 1px solid rgba(248, 81, 73, 0.28);
+            color: #ffa198;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+
+        .wrong-q-link:hover {
+            background: rgba(248, 81, 73, 0.22);
+            color: var(--red);
+            border-color: rgba(248, 81, 73, 0.5);
         }
 
         .results-hint {
@@ -370,31 +469,14 @@
         }
 
         /* ── Scrollbar ── */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--navy);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--navy); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
         @media (max-width: 540px) {
-            header h1 {
-                font-size: 20px;
-            }
-
-            .score-display {
-                font-size: 40px;
-            }
-
-            .options {
-                flex-direction: column;
-            }
+            header h1 { font-size: 20px; }
+            .score-display { font-size: 40px; }
+            .options { flex-direction: column; }
         }
     </style>
 </head>
@@ -425,6 +507,19 @@
 
         <div id="quiz-form"></div>
 
+        <!-- Unanswered warning — shown above submit when blanks exist -->
+        <div id="unanswered-warning">
+            <svg class="warn-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 1.5L14.5 13H1.5L8 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                <path d="M8 6v3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                <circle cx="8" cy="11" r="0.75" fill="currentColor"/>
+            </svg>
+            <div class="warn-text">
+                <span id="unanswered-count-text"></span>
+                <div class="warn-links" id="unanswered-links"></div>
+            </div>
+        </div>
+
         <button id="submit-btn" onclick="gradeTest()">Submit Exam</button>
 
         <div id="results-container">
@@ -434,6 +529,13 @@
             <div class="score-bar-bg">
                 <div class="score-bar-fill" id="score-bar"></div>
             </div>
+
+            <!-- Jump to wrong questions -->
+            <div id="wrong-nav">
+                <div class="wrong-nav-header">Jump to incorrect answers</div>
+                <div id="wrong-nav-links"></div>
+            </div>
+
             <p class="results-hint">Scroll up to review your feedback.</p>
             <button id="retry-btn" onclick="retryQuiz()">Load new file</button>
         </div>
@@ -447,6 +549,9 @@
         const fileInput = document.getElementById('file-input');
         const resultsContainer = document.getElementById('results-container');
         const retryBtn = document.getElementById('retry-btn');
+        const unansweredWarning = document.getElementById('unanswered-warning');
+        const unansweredLinks = document.getElementById('unanswered-links');
+        const unansweredCountText = document.getElementById('unanswered-count-text');
 
         fileInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
@@ -457,7 +562,6 @@
                 try {
                     currentQuestions = JSON.parse(e.target.result);
                     renderQuiz();
-                    // Update upload card label
                     document.querySelector('.upload-card label').innerHTML =
                         `<strong>${file.name}</strong> &mdash; ${currentQuestions.length} questions loaded.`;
                 } catch (error) {
@@ -467,19 +571,24 @@
             reader.readAsText(file);
         });
 
+        function hexNum(index) {
+            return '0x' + String(index + 1).padStart(2, '0');
+        }
+
         function renderQuiz() {
             quizContainer.innerHTML = '';
             resultsContainer.style.display = 'none';
             retryBtn.style.display = 'none';
+            unansweredWarning.style.display = 'none';
 
             currentQuestions.forEach((q, index) => {
-                const hexNum = '0x' + String(index + 1).padStart(2, '0');
                 const block = document.createElement('div');
                 block.className = 'question-block';
+                block.id = `block-${q.id}`;
                 block.style.display = 'block';
                 block.innerHTML = `
                     <div class="question-header">
-                        <span class="q-num">${hexNum}</span>
+                        <span class="q-num">${hexNum(index)}</span>
                         <div class="question-text">${q.text}</div>
                     </div>
                     <div class="options">
@@ -497,7 +606,7 @@
                 quizContainer.appendChild(block);
             });
 
-            // Add selection highlight behaviour
+            // Selection highlight + live unanswered update
             currentQuestions.forEach(q => {
                 ['T', 'F'].forEach(val => {
                     const input = document.querySelector(`input[name="q${q.id}"][value="${val}"]`);
@@ -506,17 +615,64 @@
                             r.closest('label').classList.remove('selected');
                         });
                         input.closest('label').classList.add('selected');
+                        updateUnansweredWarning();
                     });
                 });
             });
 
             submitBtn.style.display = 'block';
+            updateUnansweredWarning();
+        }
+
+        function getUnansweredIndices() {
+            return currentQuestions
+                .map((q, index) => ({ q, index }))
+                .filter(({ q }) => !document.querySelector(`input[name="q${q.id}"]:checked`));
+        }
+
+        function updateUnansweredWarning() {
+            const unanswered = getUnansweredIndices();
+
+            if (unanswered.length === 0) {
+                unansweredWarning.style.display = 'none';
+                return;
+            }
+
+            const count = unanswered.length;
+            unansweredCountText.textContent =
+                `${count} question${count > 1 ? 's' : ''} left unanswered.`;
+
+            unansweredLinks.innerHTML = '';
+            unanswered.forEach(({ q, index }) => {
+                const a = document.createElement('a');
+                a.className = 'warn-q-link';
+                a.textContent = hexNum(index);
+                a.href = '#';
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    scrollToBlock(q.id);
+                });
+                unansweredLinks.appendChild(a);
+            });
+
+            unansweredWarning.style.display = 'flex';
+        }
+
+        function scrollToBlock(qId, highlight = false) {
+            const block = document.getElementById(`block-${qId}`);
+            if (!block) return;
+            block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (highlight) {
+                block.classList.add('jump-highlight');
+                setTimeout(() => block.classList.remove('jump-highlight'), 1800);
+            }
         }
 
         function gradeTest() {
             let score = 0;
+            const wrongIndices = [];
 
-            currentQuestions.forEach(q => {
+            currentQuestions.forEach((q, index) => {
                 const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
                 const feedbackDiv = document.getElementById(`feedback-${q.id}`);
                 feedbackDiv.style.display = 'block';
@@ -524,6 +680,7 @@
                 if (!selected) {
                     feedbackDiv.className = 'feedback incorrect';
                     feedbackDiv.innerHTML = `<strong>Unanswered.</strong> ${q.explanation}`;
+                    wrongIndices.push({ q, index });
                 } else if (selected.value === q.answer) {
                     score++;
                     feedbackDiv.className = 'feedback correct';
@@ -531,10 +688,12 @@
                 } else {
                     feedbackDiv.className = 'feedback incorrect';
                     feedbackDiv.innerHTML = `<strong>Incorrect.</strong> ${q.explanation}`;
+                    wrongIndices.push({ q, index });
                 }
             });
 
             submitBtn.style.display = 'none';
+            unansweredWarning.style.display = 'none';
             resultsContainer.style.display = 'block';
             retryBtn.style.display = 'inline-block';
             document.getElementById('score-display').innerText = score;
@@ -548,6 +707,28 @@
                 });
             });
 
+            // Build jump-to-wrong nav
+            const wrongNav = document.getElementById('wrong-nav');
+            const wrongNavLinks = document.getElementById('wrong-nav-links');
+            wrongNavLinks.innerHTML = '';
+
+            if (wrongIndices.length > 0) {
+                wrongIndices.forEach(({ q, index }) => {
+                    const a = document.createElement('a');
+                    a.className = 'wrong-q-link';
+                    a.textContent = hexNum(index);
+                    a.href = '#';
+                    a.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        scrollToBlock(q.id, true);
+                    });
+                    wrongNavLinks.appendChild(a);
+                });
+                wrongNav.style.display = 'block';
+            } else {
+                wrongNav.style.display = 'none';
+            }
+
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
@@ -559,6 +740,7 @@
             resultsContainer.style.display = 'none';
             submitBtn.style.display = 'none';
             retryBtn.style.display = 'none';
+            unansweredWarning.style.display = 'none';
             currentQuestions = [];
         }
     </script>
