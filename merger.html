@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz JSON Merger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --muted: #8b949e;
+    --text: #e6edf3;
+    --amber: #f0a500;
+    --amber-dim: rgba(240, 165, 0, 0.12);
+    --green: #3fb950;
+    --green-dim: rgba(63, 185, 80, 0.10);
+    --red: #f85149;
+    --red-dim: rgba(248, 81, 73, 0.10);
+    --radius: 6px;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  header {
+    max-width: 760px;
+    margin: 0 auto 36px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--amber);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  header p {
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* ── Container ── */
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  /* ── Upload card ── */
+  .upload-card {
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    text-align: center;
+    background: var(--panel);
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+  }
+
+  .upload-card:hover, .upload-card.drag-over {
+    border-color: var(--amber);
+  }
+
+  .upload-card.drag-over {
+    background: var(--amber-dim);
+  }
+
+  .upload-card p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .upload-card p strong { color: var(--text); }
+
+  .file-btn-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  #file-input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .file-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--amber-dim);
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 20px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.15s;
+  }
+
+  .file-btn:hover { background: rgba(240, 165, 0, 0.22); }
+
+  /* ── File list ── */
+  #file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--navy);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-align: left;
+  }
+
+  .file-icon { color: var(--amber); flex-shrink: 0; }
+  .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+  .file-count { color: var(--muted); flex-shrink: 0; }
+  .file-error { color: var(--red); flex-shrink: 0; font-size: 11px; }
+
+  .file-remove {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 2px 5px;
+    font-size: 15px;
+    line-height: 1;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .file-remove:hover { color: var(--red); }
+
+  /* ── Options panel ── */
+  .options-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+
+  .panel-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .option-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .option-text { font-size: 14px; color: var(--text); }
+  .option-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Toggle */
+  .toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--navy);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    background: var(--muted);
+    border-radius: 50%;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .toggle input:checked + .toggle-track {
+    background: var(--amber-dim);
+    border-color: var(--amber);
+  }
+  .toggle input:checked + .toggle-track::after {
+    transform: translateX(20px);
+    background: var(--amber);
+  }
+
+  /* ── Stats ── */
+  #stats {
+    display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  #stats.visible { display: flex; }
+
+  .stat-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    background: var(--navy);
+  }
+  .stat-chip.highlight {
+    background: var(--amber-dim);
+    border-color: rgba(240, 165, 0, 0.3);
+    color: var(--amber);
+  }
+
+  /* ── Merge button ── */
+  #merge-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: var(--amber);
+    color: #0d1117;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: opacity 0.15s, transform 0.1s;
+    margin-bottom: 20px;
+  }
+  #merge-btn:hover:not(:disabled) { opacity: 0.88; }
+  #merge-btn:active:not(:disabled) { transform: scale(0.99); }
+  #merge-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ── Preview ── */
+  #preview-section { display: none; }
+  #preview-section.visible { display: block; }
+
+  .preview-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 12px;
+  }
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .preview-header span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  #copy-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  #copy-btn:hover { border-color: var(--amber); color: var(--amber); }
+  #copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+  #json-preview {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    background: var(--navy);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    max-height: 220px;
+    overflow-y: auto;
+    white-space: pre;
+    color: var(--muted);
+    line-height: 1.6;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  #download-btn {
+    display: block;
+    width: 100%;
+    padding: 13px;
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(63, 185, 80, 0.3);
+    border-radius: var(--radius);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    letter-spacing: 0.01em;
+  }
+  #download-btn:hover { background: rgba(63, 185, 80, 0.18); }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--navy); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  @media (max-width: 540px) {
+    header h1 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="header-eyebrow">UNSW &mdash; kk</div>
+    <h1>JSON Question Merger</h1>
+    <p>Combine multiple question files into one export. Drag &amp; drop or browse to load JSON files.</p>
+  </header>
+
+  <!-- Upload -->
+  <div class="upload-card" id="drop-zone">
+    <p id="upload-label"><strong>No files loaded.</strong> Select one or more JSON question files.</p>
+    <div class="file-btn-wrapper">
+      <input type="file" id="file-input" accept=".json" multiple>
+      <div class="file-btn">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 1v9m0-9L5 4m3-3 3 3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor"
+            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Load question files
+      </div>
+    </div>
+    <div id="file-list"></div>
+  </div>
+
+  <!-- Options -->
+  <div class="options-panel">
+    <div class="panel-label">Options</div>
+    <div class="option-row">
+      <div>
+        <div class="option-text">Randomise question order</div>
+        <div class="option-desc">Shuffle all questions before export</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="randomise-toggle">
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+    <div id="stats"></div>
+  </div>
+
+  <!-- Merge -->
+  <button id="merge-btn" disabled>Merge &amp; Export</button>
+
+  <!-- Preview + Download -->
+  <div id="preview-section">
+    <div class="preview-panel">
+      <div class="preview-header">
+        <span>Output preview</span>
+        <button id="copy-btn">COPY JSON</button>
+      </div>
+      <div id="json-preview"></div>
+    </div>
+    <button id="download-btn">⬇ &nbsp;Download merged.json</button>
+  </div>
+
+</div>
+
+<script>
+  const dropZone     = document.getElementById('drop-zone');
+  const fileInput    = document.getElementById('file-input');
+  const fileList     = document.getElementById('file-list');
+  const uploadLabel  = document.getElementById('upload-label');
+  const statsEl      = document.getElementById('stats');
+  const mergeBtn     = document.getElementById('merge-btn');
+  const previewSec   = document.getElementById('preview-section');
+  const jsonPreview  = document.getElementById('json-preview');
+  const downloadBtn  = document.getElementById('download-btn');
+  const copyBtn      = document.getElementById('copy-btn');
+  const randomToggle = document.getElementById('randomise-toggle');
+
+  const registry = new Map(); // name -> { name, data, error? }
+
+  // ── Drag & drop ───────────────────────────────────────────────────────────
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    handleFiles([...e.dataTransfer.files]);
+  });
+  fileInput.addEventListener('change', () => {
+    handleFiles([...fileInput.files]);
+    fileInput.value = '';
+  });
+
+  // ── Parse files ───────────────────────────────────────────────────────────
+  function handleFiles(files) {
+    const jsonFiles = files.filter(f => f.name.endsWith('.json'));
+    if (!jsonFiles.length) return;
+    jsonFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!Array.isArray(data)) throw new Error('Not an array');
+          registry.set(file.name, { name: file.name, data });
+        } catch (err) {
+          registry.set(file.name, { name: file.name, data: [], error: err.message });
+        }
+        renderFileList();
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  // ── Render file list ──────────────────────────────────────────────────────
+  function renderFileList() {
+    fileList.innerHTML = '';
+
+    const count = registry.size;
+    if (count === 0) {
+      uploadLabel.innerHTML = '<strong>No files loaded.</strong> Select one or more JSON question files.';
+      updateStats();
+      return;
+    }
+
+    const validCount = [...registry.values()].filter(f => !f.error).length;
+    uploadLabel.innerHTML = `<strong>${count} file${count !== 1 ? 's' : ''} loaded</strong> &mdash; ${validCount} valid.`;
+
+    registry.forEach(({ name, data, error }) => {
+      const item = document.createElement('div');
+      item.className = 'file-item';
+      item.innerHTML = `
+        <span class="file-icon">{ }</span>
+        <span class="file-name" title="${name}">${name}</span>
+        ${error
+          ? `<span class="file-error">⚠ ${error}</span>`
+          : `<span class="file-count">${data.length} q</span>`}
+        <button class="file-remove" data-name="${name}" title="Remove">×</button>
+      `;
+      fileList.appendChild(item);
+    });
+
+    fileList.querySelectorAll('.file-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        registry.delete(btn.dataset.name);
+        renderFileList();
+      });
+    });
+
+    updateStats();
+  }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+  function updateStats() {
+    const valid = [...registry.values()].filter(f => !f.error);
+    const total = valid.reduce((n, f) => n + f.data.length, 0);
+
+    if (valid.length === 0) {
+      statsEl.innerHTML = '';
+      statsEl.classList.remove('visible');
+      mergeBtn.disabled = true;
+      return;
+    }
+
+    statsEl.classList.add('visible');
+    const errCount = registry.size - valid.length;
+    statsEl.innerHTML = `
+      <span class="stat-chip highlight">${total} questions total</span>
+      <span class="stat-chip">${valid.length} file${valid.length !== 1 ? 's' : ''} valid</span>
+      ${errCount ? `<span class="stat-chip">${errCount} error${errCount !== 1 ? 's' : ''}</span>` : ''}
+    `;
+    mergeBtn.disabled = false;
+  }
+
+  // ── Shuffle ───────────────────────────────────────────────────────────────
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // ── Merge ─────────────────────────────────────────────────────────────────
+  let lastOutput = '';
+
+  mergeBtn.addEventListener('click', () => {
+    const valid = [...registry.values()].filter(f => !f.error);
+    let merged = valid.flatMap(f => f.data);
+    if (randomToggle.checked) merged = shuffle(merged);
+
+    lastOutput = JSON.stringify(merged, null, 2);
+
+    const lines = lastOutput.split('\n');
+    const preview = lines.length > 60
+      ? lines.slice(0, 60).join('\n') + `\n\n  … (${lines.length - 60} more lines)`
+      : lastOutput;
+
+    jsonPreview.textContent = preview;
+    previewSec.classList.add('visible');
+    previewSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  // ── Copy ──────────────────────────────────────────────────────────────────
+  copyBtn.addEventListener('click', async () => {
+    if (!lastOutput) return;
+    try {
+      await navigator.clipboard.writeText(lastOutput);
+      copyBtn.textContent = 'COPIED!';
+      copyBtn.classList.add('copied');
+      setTimeout(() => { copyBtn.textContent = 'COPY JSON'; copyBtn.classList.remove('copied'); }, 2000);
+    } catch {
+      copyBtn.textContent = 'FAILED';
+      setTimeout(() => { copyBtn.textContent = 'COPY JSON'; }, 2000);
+    }
+  });
+
+  // ── Download ──────────────────────────────────────────────────────────────
+  downloadBtn.addEventListener('click', () => {
+    if (!lastOutput) return;
+    const blob = new Blob([lastOutput], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'merged.json'; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  randomToggle.addEventListener('change', () => {
+    if (previewSec.classList.contains('visible')) mergeBtn.click();
+  });
+</script>
+</body>
+</html>

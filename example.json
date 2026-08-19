@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "text": "Insert your true/false statement here.",
+        "answer": "T",
+        "explanation": "True. Insert your explanation here."
+    },
+    {
+        "id": 2,
+        "text": "Insert your true/false statement here.",
+        "answer": "F",
+        "explanation": "False. Insert your explanation here."
+    },
+    {
+        "id": 3,
+        "text": "Insert your true/false statement here.",
+        "answer": "T",
+        "explanation": "True. Insert your explanation here."
+    }
+]
