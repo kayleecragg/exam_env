@@ -486,13 +486,50 @@
         .results-hint {
             font-size: 13px;
             color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        /* ── Results action buttons row ── */
+        .results-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        /* ── Download report button ── */
+        #download-report-btn {
+            display: none;
+            padding: 10px 22px;
+            background: var(--green-dim);
+            border: 1px solid var(--green);
+            color: #7ee787;
+            border-radius: var(--radius);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.04em;
+            transition: background 0.15s, color 0.15s;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #download-report-btn:hover {
+            background: rgba(63, 185, 80, 0.2);
+            color: var(--green);
+        }
+
+        #download-report-btn svg {
+            flex-shrink: 0;
         }
 
         /* ── Retry button ── */
         #retry-btn {
             display: none;
-            margin-top: 16px;
-            padding: 9px 24px;
+            padding: 10px 22px;
             background: transparent;
             border: 1px solid var(--border);
             color: var(--muted);
@@ -533,6 +570,16 @@
 
             .options.options-tf {
                 flex-direction: column;
+            }
+
+            .results-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            #download-report-btn,
+            #retry-btn {
+                justify-content: center;
             }
         }
     </style>
@@ -595,18 +642,33 @@
             </div>
 
             <p class="results-hint">Scroll up to review your feedback.</p>
-            <button id="retry-btn" onclick="retryQuiz()">Load new file</button>
+
+            <!-- Action buttons -->
+            <div class="results-actions">
+                <button id="download-report-btn" onclick="downloadReport()">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 1v9m0 0L5 7m3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Download Report
+                </button>
+                <button id="retry-btn" onclick="retryQuiz()">Load new file</button>
+            </div>
         </div>
 
     </div>
 
     <script>
         let currentQuestions = [];
+        let lastGradeResults = []; // stores grading data for report generation
+        let loadedFileName = 'exam';
+
         const quizContainer = document.getElementById('quiz-form');
         const submitBtn = document.getElementById('submit-btn');
         const fileInput = document.getElementById('file-input');
         const resultsContainer = document.getElementById('results-container');
         const retryBtn = document.getElementById('retry-btn');
+        const downloadReportBtn = document.getElementById('download-report-btn');
         const unansweredWarning = document.getElementById('unanswered-warning');
         const unansweredLinks = document.getElementById('unanswered-links');
         const unansweredCountText = document.getElementById('unanswered-count-text');
@@ -614,12 +676,12 @@
         fileInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (!file) return;
+            loadedFileName = file.name.replace(/\.json$/i, '');
 
             const reader = new FileReader();
             reader.onload = function (e) {
                 try {
                     const parsed = JSON.parse(e.target.result);
-                    // Reassign sequential IDs to guarantee uniqueness regardless of JSON source
                     currentQuestions = parsed.map((q, i) => ({ ...q, id: i + 1 }));
                     renderQuiz();
                     document.querySelector('.upload-card label').innerHTML =
@@ -636,13 +698,11 @@
         }
 
         function isMCQ(q) {
-            // A question is MCQ if it has an `options` array
             return Array.isArray(q.options) && q.options.length > 0;
         }
 
         function buildOptionsHTML(q) {
             if (isMCQ(q)) {
-                // Multiple choice — up to 4 labelled options (A, B, C, D)
                 const keys = ['A', 'B', 'C', 'D'];
                 const opts = q.options.slice(0, 4);
                 const labelsHTML = opts.map((opt, i) => {
@@ -656,7 +716,6 @@
                 }).join('');
                 return `<div class="options options-mcq">${labelsHTML}</div>`;
             } else {
-                // Legacy True / False
                 return `
                     <div class="options options-tf">
                         <label id="label-T-${q.id}">
@@ -678,11 +737,26 @@
             return ['T', 'F'];
         }
 
+        function getOptionText(q, value) {
+            if (!value) return '(unanswered)';
+            if (isMCQ(q)) {
+                const keys = ['A', 'B', 'C', 'D'];
+                const idx = keys.indexOf(value);
+                if (idx !== -1 && q.options[idx] !== undefined) {
+                    return `${value}: ${q.options[idx]}`;
+                }
+                return value;
+            }
+            return value === 'T' ? 'True' : 'False';
+        }
+
         function renderQuiz() {
             quizContainer.innerHTML = '';
             resultsContainer.style.display = 'none';
             retryBtn.style.display = 'none';
+            downloadReportBtn.style.display = 'none';
             unansweredWarning.style.display = 'none';
+            lastGradeResults = [];
 
             currentQuestions.forEach((q, index) => {
                 const block = document.createElement('div');
@@ -700,7 +774,6 @@
                 quizContainer.appendChild(block);
             });
 
-            // Selection highlight + live unanswered update
             currentQuestions.forEach(q => {
                 getOptionValues(q).forEach(val => {
                     const input = document.querySelector(`input[name="q${q.id}"][value="${val}"]`);
@@ -766,16 +839,15 @@
         function gradeTest() {
             let score = 0;
             const wrongIndices = [];
+            lastGradeResults = [];
 
             currentQuestions.forEach((q, index) => {
                 const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
                 const feedbackDiv = document.getElementById(`feedback-${q.id}`);
                 feedbackDiv.style.display = 'block';
 
-                // Disable all radio inputs for this question
                 document.querySelectorAll(`input[name="q${q.id}"]`).forEach(r => r.disabled = true);
 
-                // For MCQ: highlight the correct answer label green, wrong pick red
                 if (isMCQ(q)) {
                     const correctLabel = document.getElementById(`label-${q.answer}-${q.id}`);
                     if (correctLabel) correctLabel.classList.add('correct-answer');
@@ -784,12 +856,21 @@
                     }
                 }
 
+                let resultEntry = {
+                    index,
+                    question: q,
+                    selectedValue: selected ? selected.value : null,
+                    correct: false,
+                    unanswered: !selected
+                };
+
                 if (!selected) {
                     feedbackDiv.className = 'feedback incorrect';
                     feedbackDiv.innerHTML = `<strong>Unanswered.</strong> ${q.explanation}`;
                     wrongIndices.push({ q, index });
                 } else if (selected.value === q.answer) {
                     score++;
+                    resultEntry.correct = true;
                     feedbackDiv.className = 'feedback correct';
                     feedbackDiv.innerHTML = `<strong>Correct.</strong> ${q.explanation}`;
                 } else {
@@ -797,16 +878,18 @@
                     feedbackDiv.innerHTML = `<strong>Incorrect.</strong> ${q.explanation}`;
                     wrongIndices.push({ q, index });
                 }
+
+                lastGradeResults.push(resultEntry);
             });
 
             submitBtn.style.display = 'none';
             unansweredWarning.style.display = 'none';
             resultsContainer.style.display = 'block';
-            retryBtn.style.display = 'inline-block';
+            retryBtn.style.display = 'inline-flex';
+            downloadReportBtn.style.display = 'inline-flex';
             document.getElementById('score-display').innerText = score;
             document.getElementById('total-display').innerText = currentQuestions.length;
 
-            // Animate score bar
             const pct = currentQuestions.length > 0 ? (score / currentQuestions.length) * 100 : 0;
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -814,7 +897,6 @@
                 });
             });
 
-            // Build jump-to-wrong nav
             const wrongNav = document.getElementById('wrong-nav');
             const wrongNavLinks = document.getElementById('wrong-nav-links');
             wrongNavLinks.innerHTML = '';
@@ -839,16 +921,89 @@
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
+        function downloadReport() {
+            if (!lastGradeResults.length) return;
+
+            const now = new Date();
+            const dateStr = now.toLocaleString();
+            const score = lastGradeResults.filter(r => r.correct).length;
+            const total = lastGradeResults.length;
+            const pct = Math.round((score / total) * 100);
+
+            const incorrectResults = lastGradeResults.filter(r => !r.correct);
+
+            const divider = '='.repeat(72);
+            const thinDivider = '-'.repeat(72);
+
+            let lines = [];
+
+            lines.push(divider);
+            lines.push('  PRACTICE EXAM REPORT');
+            lines.push(divider);
+            lines.push(`  File     : ${loadedFileName}`);
+            lines.push(`  Date     : ${dateStr}`);
+            lines.push(`  Score    : ${score} / ${total}  (${pct}%)`);
+            lines.push(`  Result   : ${pct >= 50 ? 'PASS' : 'FAIL'}`);
+            lines.push(divider);
+            lines.push('');
+
+            if (incorrectResults.length === 0) {
+                lines.push('  No incorrect answers — perfect score!');
+                lines.push('');
+            } else {
+                lines.push(`  INCORRECT / UNANSWERED  (${incorrectResults.length} question${incorrectResults.length > 1 ? 's' : ''})`);
+                lines.push('');
+
+                incorrectResults.forEach((result, i) => {
+                    const q = result.question;
+                    const qLabel = hexNum(result.index);
+
+                    lines.push(thinDivider);
+                    lines.push(`  Q${i + 1}  [${qLabel}]  ${q.text}`);
+                    lines.push('');
+
+                    if (result.unanswered) {
+                        lines.push(`  Your answer    : (not answered)`);
+                    } else {
+                        lines.push(`  Your answer    : ${getOptionText(q, result.selectedValue)}`);
+                    }
+                    lines.push(`  Correct answer : ${getOptionText(q, q.answer)}`);
+                    lines.push('');
+                    lines.push(`  Explanation    : ${q.explanation}`);
+                    lines.push('');
+                });
+            }
+
+            lines.push(divider);
+            lines.push('  END OF REPORT');
+            lines.push(divider);
+
+            const reportText = lines.join('\n');
+            const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${loadedFileName}_report_${now.toISOString().slice(0,10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         function retryQuiz() {
             fileInput.value = '';
+            loadedFileName = 'exam';
             document.querySelector('.upload-card label').innerHTML =
                 `<strong>No questions loaded.</strong> Select a JSON file to start a session.`;
             quizContainer.innerHTML = '';
             resultsContainer.style.display = 'none';
             submitBtn.style.display = 'none';
             retryBtn.style.display = 'none';
+            downloadReportBtn.style.display = 'none';
             unansweredWarning.style.display = 'none';
             currentQuestions = [];
+            lastGradeResults = [];
         }
     </script>
 
