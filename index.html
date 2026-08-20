@@ -204,12 +204,23 @@
             margin-top: 4px;
         }
 
+        /* True/False stays horizontal; MCQ stacks vertically */
+        .options.options-tf {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+
+        .options.options-mcq {
+            flex-direction: column;
+            gap: 8px;
+        }
+
         .options label {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 14px;
             cursor: pointer;
-            padding: 9px 18px;
+            padding: 10px 18px;
             border: 1px solid var(--border);
             border-radius: var(--radius);
             font-size: 14px;
@@ -233,6 +244,35 @@
             border-color: var(--amber);
             color: var(--amber);
             background: var(--amber-dim);
+        }
+
+        /* Option key badge (A, B, C, D) */
+        .option-key {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: inherit;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid currentColor;
+            opacity: 0.7;
+            padding: 3px 9px;
+            border-radius: 3px;
+            flex-shrink: 0;
+            min-width: 28px;
+            text-align: center;
+        }
+
+        /* Correct / incorrect option colouring after grading */
+        .options label.correct-answer {
+            border-color: var(--green) !important;
+            background: var(--green-dim) !important;
+            color: #7ee787 !important;
+        }
+
+        .options label.wrong-answer {
+            border-color: var(--red) !important;
+            background: var(--red-dim) !important;
+            color: #ffa198 !important;
         }
 
         /* ── Feedback ── */
@@ -469,14 +509,31 @@
         }
 
         /* ── Scrollbar ── */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--navy); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--navy);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
 
         @media (max-width: 540px) {
-            header h1 { font-size: 20px; }
-            .score-display { font-size: 40px; }
-            .options { flex-direction: column; }
+            header h1 {
+                font-size: 20px;
+            }
+
+            .score-display {
+                font-size: 40px;
+            }
+
+            .options.options-tf {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -488,7 +545,7 @@
         <header>
             <div class="header-eyebrow">UNSW &mdash; kk</div>
             <h1>Practice Exam Environment</h1>
-            <p>True / False — load a question file to begin.</p>
+            <p>True / False &amp; Multiple Choice — load a question file to begin.</p>
         </header>
 
         <div class="upload-card">
@@ -509,10 +566,11 @@
 
         <!-- Unanswered warning — shown above submit when blanks exist -->
         <div id="unanswered-warning">
-            <svg class="warn-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M8 1.5L14.5 13H1.5L8 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-                <path d="M8 6v3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                <circle cx="8" cy="11" r="0.75" fill="currentColor"/>
+            <svg class="warn-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"
+                xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 1.5L14.5 13H1.5L8 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                <path d="M8 6v3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                <circle cx="8" cy="11" r="0.75" fill="currentColor" />
             </svg>
             <div class="warn-text">
                 <span id="unanswered-count-text"></span>
@@ -560,7 +618,9 @@
             const reader = new FileReader();
             reader.onload = function (e) {
                 try {
-                    currentQuestions = JSON.parse(e.target.result);
+                    const parsed = JSON.parse(e.target.result);
+                    // Reassign sequential IDs to guarantee uniqueness regardless of JSON source
+                    currentQuestions = parsed.map((q, i) => ({ ...q, id: i + 1 }));
                     renderQuiz();
                     document.querySelector('.upload-card label').innerHTML =
                         `<strong>${file.name}</strong> &mdash; ${currentQuestions.length} questions loaded.`;
@@ -573,6 +633,49 @@
 
         function hexNum(index) {
             return '0x' + String(index + 1).padStart(2, '0');
+        }
+
+        function isMCQ(q) {
+            // A question is MCQ if it has an `options` array
+            return Array.isArray(q.options) && q.options.length > 0;
+        }
+
+        function buildOptionsHTML(q) {
+            if (isMCQ(q)) {
+                // Multiple choice — up to 4 labelled options (A, B, C, D)
+                const keys = ['A', 'B', 'C', 'D'];
+                const opts = q.options.slice(0, 4);
+                const labelsHTML = opts.map((opt, i) => {
+                    const key = keys[i];
+                    return `
+                        <label id="label-${key}-${q.id}">
+                            <input type="radio" name="q${q.id}" value="${key}">
+                            <span class="option-key">${key}</span>
+                            <span>${opt}</span>
+                        </label>`;
+                }).join('');
+                return `<div class="options options-mcq">${labelsHTML}</div>`;
+            } else {
+                // Legacy True / False
+                return `
+                    <div class="options options-tf">
+                        <label id="label-T-${q.id}">
+                            <input type="radio" name="q${q.id}" value="T">
+                            <span>True</span>
+                        </label>
+                        <label id="label-F-${q.id}">
+                            <input type="radio" name="q${q.id}" value="F">
+                            <span>False</span>
+                        </label>
+                    </div>`;
+            }
+        }
+
+        function getOptionValues(q) {
+            if (isMCQ(q)) {
+                return ['A', 'B', 'C', 'D'].slice(0, q.options.length);
+            }
+            return ['T', 'F'];
         }
 
         function renderQuiz() {
@@ -591,16 +694,7 @@
                         <span class="q-num">${hexNum(index)}</span>
                         <div class="question-text">${q.text}</div>
                     </div>
-                    <div class="options">
-                        <label id="label-T-${q.id}">
-                            <input type="radio" name="q${q.id}" value="T">
-                            <span>True</span>
-                        </label>
-                        <label id="label-F-${q.id}">
-                            <input type="radio" name="q${q.id}" value="F">
-                            <span>False</span>
-                        </label>
-                    </div>
+                    ${buildOptionsHTML(q)}
                     <div class="feedback" id="feedback-${q.id}"></div>
                 `;
                 quizContainer.appendChild(block);
@@ -608,8 +702,9 @@
 
             // Selection highlight + live unanswered update
             currentQuestions.forEach(q => {
-                ['T', 'F'].forEach(val => {
+                getOptionValues(q).forEach(val => {
                     const input = document.querySelector(`input[name="q${q.id}"][value="${val}"]`);
+                    if (!input) return;
                     input.addEventListener('change', () => {
                         document.querySelectorAll(`input[name="q${q.id}"]`).forEach(r => {
                             r.closest('label').classList.remove('selected');
@@ -676,6 +771,18 @@
                 const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
                 const feedbackDiv = document.getElementById(`feedback-${q.id}`);
                 feedbackDiv.style.display = 'block';
+
+                // Disable all radio inputs for this question
+                document.querySelectorAll(`input[name="q${q.id}"]`).forEach(r => r.disabled = true);
+
+                // For MCQ: highlight the correct answer label green, wrong pick red
+                if (isMCQ(q)) {
+                    const correctLabel = document.getElementById(`label-${q.answer}-${q.id}`);
+                    if (correctLabel) correctLabel.classList.add('correct-answer');
+                    if (selected && selected.value !== q.answer) {
+                        selected.closest('label').classList.add('wrong-answer');
+                    }
+                }
 
                 if (!selected) {
                     feedbackDiv.className = 'feedback incorrect';

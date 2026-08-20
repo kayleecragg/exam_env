@@ -16,5 +16,41 @@
         "text": "Insert your true/false statement here.",
         "answer": "T",
         "explanation": "True. Insert your explanation here."
+    },
+    {
+        "id": 3,
+        "text": "Which data structure operates on a Last-In, First-Out (LIFO) basis?",
+        "answer": "B",
+        "options": [
+            "Queue",
+            "Stack",
+            "Linked List",
+            "Heap"
+        ],
+        "explanation": "A Stack uses LIFO ordering — the most recently pushed element is the first to be popped."
+    },
+    {
+        "id": 4,
+        "text": "What is the time complexity of binary search on a sorted array?",
+        "answer": "C",
+        "options": [
+            "O(n)",
+            "O(n²)",
+            "O(log n)",
+            "O(1)"
+        ],
+        "explanation": "Binary search halves the search space at each step, giving O(log n) time complexity."
+    },
+    {
+        "id": 5,
+        "text": "Which of the following is NOT a valid HTTP method?",
+        "answer": "D",
+        "options": [
+            "GET",
+            "POST",
+            "PATCH",
+            "FETCH"
+        ],
+        "explanation": "FETCH is not an HTTP method. The standard methods include GET, POST, PUT, PATCH, DELETE, HEAD, and OPTIONS."
     }
 ]
