@@ -18,7 +18,7 @@
         "explanation": "True. Insert your explanation here."
     },
     {
-        "id": 3,
+        "id": 4,
         "text": "Which data structure operates on a Last-In, First-Out (LIFO) basis?",
         "answer": "B",
         "options": [
@@ -30,7 +30,7 @@
         "explanation": "A Stack uses LIFO ordering — the most recently pushed element is the first to be popped."
     },
     {
-        "id": 4,
+        "id": 5,
         "text": "What is the time complexity of binary search on a sorted array?",
         "answer": "C",
         "options": [
@@ -42,7 +42,7 @@
         "explanation": "Binary search halves the search space at each step, giving O(log n) time complexity."
     },
     {
-        "id": 5,
+        "id": 6,
         "text": "Which of the following is NOT a valid HTTP method?",
         "answer": "D",
         "options": [
